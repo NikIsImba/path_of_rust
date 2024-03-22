@@ -86,6 +86,25 @@ where
     }
 }
 
+pub fn from_string_to_u32_option<'de, D>(deserializer: D) -> Result<Option<u32>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let string: String = match String::deserialize(deserializer) {
+        Ok(string) => string,
+        Err(e) => panic!("Failed to parse string: {}", e),
+    };
+
+    if string.is_empty() {
+        return Ok(None);
+    }
+
+    match string.parse::<u32>() {
+        Ok(s) => Ok(Some(s)),
+        Err(e) => panic!("Failed to parse string: {}", e),
+    }
+}
+
 pub fn from_string_array_to_box<'de, D>(deserializer: D) -> Result<Box<Box<str>>, D::Error>
 where
     D: serde::Deserializer<'de>,
@@ -121,6 +140,10 @@ where
 }
 
 pub fn default_box_box_str_none() -> Option<Box<Box<str>>> {
+    None
+}
+
+pub fn defualt_u32_none() -> Option<u32> {
     None
 }
 
