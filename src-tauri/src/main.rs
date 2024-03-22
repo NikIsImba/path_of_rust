@@ -12,7 +12,7 @@ fn get_base_size(tree: tauri::State<PathOfExileSkillTree>) -> (i32, i32) {
 }
 
 #[tauri::command]
-fn get_group_locations(tree: tauri::State<PathOfExileSkillTree>) -> HashMap<i32, (f32, f32)> {
+fn get_group_locations(tree: tauri::State<PathOfExileSkillTree>) -> HashMap<u32, (f32, f32)> {
     tree.get_group_locations()
 }
 

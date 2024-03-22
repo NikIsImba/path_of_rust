@@ -1,15 +1,25 @@
 use serde::Deserialize;
-use std::{collections::HashMap, vec};
+use std::collections::HashMap;
+
+use super::{
+    node::Node,
+    parsing::{
+        from_string_array_to_u32_box, from_string_key_to_u32_with_group,
+        from_string_key_to_u32_with_node,
+    },
+};
 
 #[derive(Deserialize)]
 pub struct PathOfExileSkillTree {
-    pub tree: String,
-    #[serde(deserialize_with = "from_string_key_to_i32")]
-    pub groups: HashMap<i32, Group>,
-    pub min_x: i32,
-    pub min_y: i32,
-    pub max_x: i32,
-    pub max_y: i32,
+    tree: String,
+    #[serde(deserialize_with = "from_string_key_to_u32_with_group")]
+    groups: HashMap<u32, Group>,
+    #[serde(deserialize_with = "from_string_key_to_u32_with_node")]
+    nodes: HashMap<u32, Node>,
+    min_x: i32,
+    min_y: i32,
+    max_x: i32,
+    max_y: i32,
 }
 
 impl PathOfExileSkillTree {
@@ -17,7 +27,7 @@ impl PathOfExileSkillTree {
         (self.max_x - self.min_x, self.max_y - self.min_y)
     }
 
-    pub fn get_group_locations(&self) -> HashMap<i32, (f32, f32)> {
+    pub fn get_group_locations(&self) -> HashMap<u32, (f32, f32)> {
         self.groups
             .iter()
             .map(|(k, v)| {
@@ -31,47 +41,9 @@ impl PathOfExileSkillTree {
 
 #[derive(Deserialize)]
 pub struct Group {
-    pub x: f32,
-    pub y: f32,
-    pub orbits: Box<[u8]>,
-    #[serde(deserialize_with = "from_string_to_u32")]
-    pub nodes: Box<[u32]>,
-}
-
-fn from_string_key_to_i32<'de, D>(deserializer: D) -> Result<HashMap<i32, Group>, D::Error>
-where
-    D: serde::Deserializer<'de>,
-{
-    let map: HashMap<String, Group> = match HashMap::deserialize(deserializer) {
-        Ok(map) => map,
-        Err(e) => panic!("Failed to parse map: {}", e),
-    };
-
-    map.into_iter()
-        .map(|(k, v)| {
-            let k = match k.parse::<i32>() {
-                Ok(k) => k,
-                Err(e) => panic!("Failed to parse key: {}", e),
-            };
-            Ok((k, v))
-        })
-        .collect()
-}
-
-fn from_string_to_u32<'de, D>(deserializer: D) -> Result<Box<[u32]>, D::Error>
-where
-    D: serde::Deserializer<'de>,
-{
-    let string: vec::Vec<String> = match vec::Vec::deserialize(deserializer) {
-        Ok(string) => string,
-        Err(e) => panic!("Failed to parse string: {}", e),
-    };
-
-    string
-        .into_iter()
-        .map(|s| match s.parse::<u32>() {
-            Ok(s) => Ok(s),
-            Err(e) => panic!("Failed to parse string: {}", e),
-        })
-        .collect()
+    x: f32,
+    y: f32,
+    orbits: Box<[u8]>,
+    #[serde(deserialize_with = "from_string_array_to_u32_box")]
+    nodes: Box<[u32]>,
 }
