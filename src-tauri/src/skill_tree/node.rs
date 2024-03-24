@@ -1,7 +1,4 @@
-#![allow(unused)]
-use std::collections::HashSet;
-
-use serde::{de, Deserialize, Deserializer};
+use serde::{Deserialize, Deserializer};
 use serde_json::Value;
 
 use super::parsing::{
@@ -10,27 +7,43 @@ use super::parsing::{
     from_string_to_u32_option,
 };
 
-//@TODO: Continue to split up data like PositionData and AscendancyNode into their own structs
+const ASCENDANCY_FLAG: &str = "ascendancyName";
+const CLASS_START_FLAG: &str = "classStartIndex";
+const MASTERY_FLAG: &str = "isMastery";
+const PROXY_FLAG: &str = "isProxy";
+const NOTABLE_FLAG: &str = "isNotable";
+const KEYSTONE_FLAG: &str = "isKeystone";
+const JEWEL_SOCKET_FLAG: &str = "isJewelSocket";
+const EXPANSION_JEWEL_FLAG: &str = "expansionJewel";
+const SKILL_FLAG: &str = "skill";
 
 pub enum Node {
-    Ascendancy(AscendancyNode, PositionData),
-    ClassStart(ClassStartNode),
-    Mastery(MasteryNode),
-    Proxy(ProxyNode),
-    DeprecatedMastery(DeprecatedMasteryNode),
-    Notable(NotableNode),
-    Keystone(KeystoneNode),
-    StandaloneNotable(StandaloneNotableNode),
-    StandaloneKeystone(StandaloneKeystoneNode),
-    JewelSocket(JewelSocketNode),
-    ExpansionJewelSocket(ExpansionJewelSocketNode),
-    Normal(NormalNode),
-    StandaloneNormal(StandaloneNormalNode),
-    Root(PositionData),
+    Normal(NodeMainData, NodePositionData, NormalNode),
+    StandaloneNormal(NodeMainData, NormalNode),
+    Notable(NodeMainData, NodePositionData, NotableNode),
+    StandaloneNotable(NodeMainData, StandaloneNotableNode),
+    Keystone(NodeMainData, NodePositionData, KeystoneNode),
+    StandaloneKeystone(NodeMainData, KeystoneNode),
+    Mastery(NodeMainData, NodePositionData, MasteryNode),
+    JewelSocket(NodeMainData, NodePositionData),
+    ExpansionJewelSocket(NodeMainData, NodePositionData, ExpansionJewelNode),
+    Ascendancy(NodeMainData, NodePositionData, AscendancyNode),
+    ClassStart(NodeMainData, NodePositionData, ClassStartNode),
+    Proxy(NodeMainData, NodePositionData),
+    Root(NodePositionData),
+    DeprecatedMastery(NodeMainData),
 }
 
 #[derive(Deserialize)]
-pub struct PositionData {
+pub struct NodeMainData {
+    skill: u32,
+    name: Box<str>,
+    icon: Box<str>,
+    #[serde(deserialize_with = "from_string_array_to_box")]
+    stats: Box<Box<str>>,
+}
+#[derive(Deserialize)]
+pub struct NodePositionData {
     group: u32,
     orbit: u8,
     #[serde(rename = "orbitIndex")]
@@ -42,20 +55,21 @@ pub struct PositionData {
 }
 
 #[derive(Deserialize)]
-pub struct AscendancyNode {
-    skill: u32,
-    name: Box<str>,
-    #[serde(rename = "isNotable", default = "default_bool")]
-    is_notable: bool,
-    icon: Box<str>,
-    #[serde(deserialize_with = "from_string_array_to_box")]
-    stats: Box<Box<str>>,
+pub struct Attribute {
     #[serde(rename = "grantedStrength", default = "default_u8")]
     granted_strength: u8,
     #[serde(rename = "grantedDexterity", default = "default_u8")]
     granted_dexterity: u8,
     #[serde(rename = "grantedIntelligence", default = "default_u8")]
     granted_intelligence: u8,
+}
+
+#[derive(Deserialize)]
+pub struct AscendancyNode {
+    #[serde(rename = "isNotable", default = "default_bool")]
+    is_notable: bool,
+    #[serde(flatten)]
+    attribute: Attribute,
     #[serde(
         deserialize_with = "from_string_array_to_box_option",
         default = "default_box_box_str_none",
@@ -84,28 +98,12 @@ pub struct AscendancyNode {
 
 #[derive(Deserialize)]
 pub struct ClassStartNode {
-    skill: u32,
-    name: Box<str>,
-    icon: Box<str>,
-    #[serde(deserialize_with = "from_string_array_to_box")]
-    stats: Box<Box<str>>,
     #[serde(rename = "classStartIndex")]
     class_start_index: u8,
-    group: u32,
-    orbit: u8,
-    #[serde(rename = "orbitIndex")]
-    orbit_index: u8,
-    #[serde(deserialize_with = "from_string_array_to_u32_box", rename = "out")]
-    out_nodes: Box<[u32]>,
-    #[serde(deserialize_with = "from_string_array_to_u32_box", rename = "in")]
-    in_nodes: Box<[u32]>,
 }
 
 #[derive(Deserialize)]
 pub struct MasteryNode {
-    skill: u32,
-    name: Box<str>,
-    icon: Box<str>,
     #[serde(rename = "inactiveIcon")]
     inactive_icon: Box<str>,
     #[serde(rename = "activeIcon")]
@@ -114,16 +112,6 @@ pub struct MasteryNode {
     active_effect_image: Box<str>,
     #[serde(rename = "masteryEffects")]
     mastery_effects: Box<[MasteryEffect]>,
-    #[serde(deserialize_with = "from_string_array_to_box")]
-    stats: Box<Box<str>>,
-    group: u32,
-    orbit: u8,
-    #[serde(rename = "orbitIndex")]
-    orbit_index: u8,
-    #[serde(deserialize_with = "from_string_array_to_u32_box", rename = "out")]
-    out_nodes: Box<[u32]>,
-    #[serde(deserialize_with = "from_string_array_to_u32_box", rename = "in")]
-    in_nodes: Box<[u32]>,
 }
 
 #[derive(Deserialize)]
@@ -140,36 +128,7 @@ pub struct MasteryEffect {
 }
 
 #[derive(Deserialize)]
-pub struct ProxyNode {
-    skill: u32,
-    name: Box<str>,
-    icon: Box<str>,
-    #[serde(deserialize_with = "from_string_array_to_box")]
-    stats: Box<Box<str>>,
-    group: u32,
-    orbit: u8,
-    #[serde(rename = "orbitIndex")]
-    orbit_index: u8,
-    #[serde(deserialize_with = "from_string_array_to_u32_box", rename = "out")]
-    out_nodes: Box<[u32]>,
-    #[serde(deserialize_with = "from_string_array_to_u32_box", rename = "in")]
-    in_nodes: Box<[u32]>,
-}
-
-#[derive(Deserialize)]
-pub struct DeprecatedMasteryNode {
-    skill: u32,
-    name: Box<str>,
-    icon: Box<str>,
-    #[serde(deserialize_with = "from_string_array_to_box")]
-    stats: Box<Box<str>>,
-}
-
-#[derive(Deserialize)]
 pub struct NotableNode {
-    skill: u32,
-    name: Box<str>,
-    icon: Box<str>,
     #[serde(
         deserialize_with = "from_string_array_to_box_option",
         default = "default_box_box_str_none",
@@ -180,28 +139,12 @@ pub struct NotableNode {
     recipe: Box<Box<str>>,
     #[serde(rename = "isBlighted", default = "default_bool")]
     is_blighted: bool,
-    #[serde(deserialize_with = "from_string_array_to_box")]
-    stats: Box<Box<str>>,
-    #[serde(rename = "grantedStrength", default = "default_u8")]
-    granted_strength: u8,
-    #[serde(rename = "grantedDexterity", default = "default_u8")]
-    granted_dexterity: u8,
-    #[serde(rename = "grantedIntelligence", default = "default_u8")]
-    granted_intelligence: u8,
-    group: u32,
-    orbit: u8,
-    #[serde(rename = "orbitIndex")]
-    orbit_index: u8,
-    #[serde(deserialize_with = "from_string_array_to_u32_box", rename = "out")]
-    out_nodes: Box<[u32]>,
-    #[serde(deserialize_with = "from_string_array_to_u32_box", rename = "in")]
-    in_nodes: Box<[u32]>,
+    #[serde(flatten)]
+    attribute: Attribute,
 }
 
 #[derive(Deserialize)]
 pub struct KeystoneNode {
-    skill: u32,
-    name: Box<str>,
     #[serde(
         deserialize_with = "from_string_array_to_box_option",
         default = "default_box_box_str_none",
@@ -214,99 +157,22 @@ pub struct KeystoneNode {
         rename = "reminderText"
     )]
     reminder_text: Option<Box<Box<str>>>,
-    icon: Box<str>,
-    #[serde(deserialize_with = "from_string_array_to_box")]
-    stats: Box<Box<str>>,
-    group: u32,
-    orbit: u8,
-    #[serde(rename = "orbitIndex")]
-    orbit_index: u8,
-    #[serde(deserialize_with = "from_string_array_to_u32_box", rename = "out")]
-    out_nodes: Box<[u32]>,
-    #[serde(deserialize_with = "from_string_array_to_u32_box", rename = "in")]
-    in_nodes: Box<[u32]>,
 }
 
 #[derive(Deserialize)]
 pub struct StandaloneNotableNode {
-    skill: u32,
-    name: Box<str>,
-    icon: Box<str>,
     #[serde(
         deserialize_with = "from_string_array_to_box_option",
         default = "default_box_box_str_none",
         rename = "reminderText"
     )]
     reminder_text: Option<Box<Box<str>>>,
-    #[serde(deserialize_with = "from_string_array_to_box")]
-    stats: Box<Box<str>>,
-    #[serde(rename = "grantedStrength", default = "default_u8")]
-    granted_strength: u8,
-    #[serde(rename = "grantedDexterity", default = "default_u8")]
-    granted_dexterity: u8,
-    #[serde(rename = "grantedIntelligence", default = "default_u8")]
-    granted_intelligence: u8,
+    #[serde(flatten)]
+    attribute: Attribute,
 }
 
 #[derive(Deserialize)]
-pub struct StandaloneKeystoneNode {
-    skill: u32,
-    name: Box<str>,
-    #[serde(
-        deserialize_with = "from_string_array_to_box_option",
-        default = "default_box_box_str_none",
-        rename = "flavourText"
-    )]
-    flavour_text: Option<Box<Box<str>>>,
-    #[serde(
-        deserialize_with = "from_string_array_to_box_option",
-        default = "default_box_box_str_none",
-        rename = "reminderText"
-    )]
-    reminder_text: Option<Box<Box<str>>>,
-    icon: Box<str>,
-    #[serde(deserialize_with = "from_string_array_to_box")]
-    stats: Box<Box<str>>,
-}
-
-#[derive(Deserialize)]
-pub struct JewelSocketNode {
-    skill: u32,
-    name: Box<str>,
-    icon: Box<str>,
-    #[serde(deserialize_with = "from_string_array_to_box")]
-    stats: Box<Box<str>>,
-    group: u32,
-    orbit: u8,
-    #[serde(rename = "orbitIndex")]
-    orbit_index: u8,
-    #[serde(deserialize_with = "from_string_array_to_u32_box", rename = "out")]
-    out_nodes: Box<[u32]>,
-    #[serde(deserialize_with = "from_string_array_to_u32_box", rename = "in")]
-    in_nodes: Box<[u32]>,
-}
-
-#[derive(Deserialize)]
-pub struct ExpansionJewelSocketNode {
-    skill: u32,
-    name: Box<str>,
-    icon: Box<str>,
-    #[serde(deserialize_with = "from_string_array_to_box")]
-    stats: Box<Box<str>>,
-    #[serde(rename = "expansionJewel")]
-    expansion_jewel: ExpansionJewelData,
-    group: u32,
-    orbit: u8,
-    #[serde(rename = "orbitIndex")]
-    orbit_index: u8,
-    #[serde(deserialize_with = "from_string_array_to_u32_box", rename = "out")]
-    out_nodes: Box<[u32]>,
-    #[serde(deserialize_with = "from_string_array_to_u32_box", rename = "in")]
-    in_nodes: Box<[u32]>,
-}
-
-#[derive(Deserialize)]
-pub struct ExpansionJewelData {
+pub struct ExpansionJewelNode {
     size: u8,
     index: u8,
     #[serde(deserialize_with = "from_string_to_u32")]
@@ -320,52 +186,14 @@ pub struct ExpansionJewelData {
 
 #[derive(Deserialize)]
 pub struct NormalNode {
-    skill: u32,
-    name: Box<str>,
-    icon: Box<str>,
     #[serde(
         deserialize_with = "from_string_array_to_box_option",
         default = "default_box_box_str_none",
         rename = "reminderText"
     )]
     reminder_text: Option<Box<Box<str>>>,
-    #[serde(deserialize_with = "from_string_array_to_box")]
-    stats: Box<Box<str>>,
-    #[serde(rename = "grantedStrength", default = "default_u8")]
-    granted_strength: u8,
-    #[serde(rename = "grantedDexterity", default = "default_u8")]
-    granted_dexterity: u8,
-    #[serde(rename = "grantedIntelligence", default = "default_u8")]
-    granted_intelligence: u8,
-    group: u32,
-    orbit: u8,
-    #[serde(rename = "orbitIndex")]
-    orbit_index: u8,
-    #[serde(deserialize_with = "from_string_array_to_u32_box", rename = "out")]
-    out_nodes: Box<[u32]>,
-    #[serde(deserialize_with = "from_string_array_to_u32_box", rename = "in")]
-    in_nodes: Box<[u32]>,
-}
-
-#[derive(Deserialize)]
-pub struct StandaloneNormalNode {
-    skill: u32,
-    name: Box<str>,
-    icon: Box<str>,
-    #[serde(
-        deserialize_with = "from_string_array_to_box_option",
-        default = "default_box_box_str_none",
-        rename = "reminderText"
-    )]
-    reminder_text: Option<Box<Box<str>>>,
-    #[serde(deserialize_with = "from_string_array_to_box")]
-    stats: Box<Box<str>>,
-    #[serde(rename = "grantedStrength", default = "default_u8")]
-    granted_strength: u8,
-    #[serde(rename = "grantedDexterity", default = "default_u8")]
-    granted_dexterity: u8,
-    #[serde(rename = "grantedIntelligence", default = "default_u8")]
-    granted_intelligence: u8,
+    #[serde(flatten)]
+    attribute: Attribute,
 }
 
 impl<'de> Deserialize<'de> for Node {
@@ -379,99 +207,98 @@ impl<'de> Deserialize<'de> for Node {
             None => return Err(serde::de::Error::custom("Expected object")),
         };
 
-        if map.contains_key("ascendancyName") {
-            match Deserialize::deserialize(value.clone()) {
-                Ok(ascendancy_node) => match Deserialize::deserialize(value) {
-                    Ok(position_data) => {
-                        return Ok(Node::Ascendancy(ascendancy_node, position_data))
-                    }
-                    Err(e) => panic!("Failed to parse position data: {}", e),
+        if map.contains_key(ASCENDANCY_FLAG) {
+            let ascendancy_node = Deserialize::deserialize(&value).expect("Failed to parse ascendancy node");
+            let main_data = Deserialize::deserialize(&value).expect("Failed to parse main data");
+            let position_data = Deserialize::deserialize(value).expect("Failed to parse position data");
+            return Ok(Node::Ascendancy(main_data, position_data, ascendancy_node));
+        }
+
+        if map.contains_key(CLASS_START_FLAG) {
+            let class_start_node = Deserialize::deserialize(&value).expect("Failed to parse class start node");
+            let main_data = Deserialize::deserialize(&value).expect("Failed to parse main data");
+            let position_data = Deserialize::deserialize(value).expect("Failed to parse position data");
+            return Ok(Node::ClassStart(main_data, position_data, class_start_node));
+        }
+
+        if map.contains_key(MASTERY_FLAG) {
+            match Deserialize::deserialize(&value) {
+                Ok(mastery_node) => {
+                    let position_data = Deserialize::deserialize(&value).expect("Failed to parse position data");
+                    let main_data = Deserialize::deserialize(value).expect("Failed to parse main data");
+                    return Ok(Node::Mastery(main_data, position_data, mastery_node))
                 },
-                Err(e) => panic!("Failed to parse ascendancy node: {}", e),
-            }
-        }
-
-        if map.contains_key("classStartIndex") {
-            match Deserialize::deserialize(value) {
-                Ok(class_start_node) => return Ok(Node::ClassStart(class_start_node)),
-                Err(e) => panic!("Failed to parse class start node: {}", e),
-            }
-        }
-
-        if map.contains_key("isMastery") {
-            match Deserialize::deserialize(value.clone()) {
-                Ok(mastery_node) => return Ok(Node::Mastery(mastery_node)),
-                Err(e) => match Deserialize::deserialize(value) {
-                    Ok(deprecated_mastery_node) => {
-                        return Ok(Node::DeprecatedMastery(deprecated_mastery_node))
-                    }
-                    Err(e) => panic!("Failed to parse depricated mastery node: {}", e),
+                Err(_) => {
+                    let deprecated_mastery_node = Deserialize::deserialize(&value).expect("Failed to parse deprecated mastery node");
+                    return Ok(Node::DeprecatedMastery(deprecated_mastery_node))
                 },
             }
         }
 
-        if map.contains_key("isProxy") {
-            match Deserialize::deserialize(value.clone()) {
-                Ok(proxy_node) => return Ok(Node::Proxy(proxy_node)),
-                Err(e) => panic!("Failed to parse proxy node: {}", e),
-            }
+        if map.contains_key(PROXY_FLAG) {
+            let proxy_node = Deserialize::deserialize(&value).expect("Failed to parse proxy node");
+            let position_data = Deserialize::deserialize(value).expect("Failed to parse position data");
+            return Ok(Node::Proxy(proxy_node, position_data));
         }
 
-        if map.contains_key("isNotable") {
-            match Deserialize::deserialize(value.clone()) {
-                Ok(notable_node) => return Ok(Node::Notable(notable_node)),
-                Err(e) => match Deserialize::deserialize(value) {
-                    Ok(standalone_notable_node) => {
-                        return Ok(Node::StandaloneNotable(standalone_notable_node))
-                    }
-                    Err(e) => panic!("Failed to parse standalone notable node: {}", e),
-                },
-            }
-        }
-
-        if map.contains_key("isKeystone") {
-            match Deserialize::deserialize(value.clone()) {
-                Ok(keystone_node) => return Ok(Node::Keystone(keystone_node)),
-                Err(e) => match Deserialize::deserialize(value) {
-                    Ok(standalone_keystone_node) => {
-                        return Ok(Node::StandaloneKeystone(standalone_keystone_node))
-                    }
-                    Err(e) => panic!("Failed to parse standalone keystone node: {}", e),
-                },
-            }
-        }
-
-        if map.contains_key("isJewelSocket") {
-            if (map.contains_key("expansionJewel")) {
-                match Deserialize::deserialize(value) {
-                    Ok(expansion_jewel_socket_node) => {
-                        return Ok(Node::ExpansionJewelSocket(expansion_jewel_socket_node))
-                    }
-                    Err(e) => panic!("Failed to parse expansion jewel socket node: {}", e),
+        if map.contains_key(NOTABLE_FLAG) {
+            match Deserialize::deserialize(&value) {
+                Ok(position_data) => {
+                    let main_data = Deserialize::deserialize(&value).expect("Failed to parse main data");
+                    let notable_node = Deserialize::deserialize(value).expect("Failed to parse notable node");
+                    return Ok(Node::Notable(main_data, position_data, notable_node))
+                }
+                Err(_) => {
+                    let standalone_notable_node = Deserialize::deserialize(&value).expect("Failed to parse standalone notable node");
+                    let main_data = Deserialize::deserialize(value).expect("Failed to parse main data");
+                    return Ok(Node::StandaloneNotable(main_data, standalone_notable_node))
                 }
             }
+        }
 
-            match Deserialize::deserialize(value) {
-                Ok(jewel_socket_node) => return Ok(Node::JewelSocket(jewel_socket_node)),
-                Err(e) => panic!("Failed to parse jewel socket node: {}", e),
+        if map.contains_key(KEYSTONE_FLAG) {
+            match Deserialize::deserialize(&value) {
+                Ok(position_data) => {
+                    let main_data = Deserialize::deserialize(&value).expect("Failed to parse main data");
+                    let keystone_node = Deserialize::deserialize(value).expect("Failed to parse keystone node");
+                    return Ok(Node::Keystone(main_data, position_data, keystone_node))
+                }
+                Err(_) => {
+                    let standalone_keystone_node = Deserialize::deserialize(&value).expect("Failed to parse standalone keystone node");
+                    let main_data = Deserialize::deserialize(value).expect("Failed to parse main data");
+                    return Ok(Node::StandaloneKeystone(main_data, standalone_keystone_node))
+                }
             }
         }
 
-        if map.contains_key("skill") {
-            match Deserialize::deserialize(value.clone()) {
-                Ok(normal_node) => return Ok(Node::Normal(normal_node)),
-                Err(e) => match Deserialize::deserialize(value) {
-                    Ok(standalone_normal_node) => {
-                        return Ok(Node::StandaloneNormal(standalone_normal_node))
-                    }
-                    Err(e) => panic!("Failed to parse standalone normal node: {}", e),
-                },
+        if map.contains_key(JEWEL_SOCKET_FLAG) {
+            if let Some(expansion_jewel_value) = map.get(EXPANSION_JEWEL_FLAG) {
+                let expansion_jewel_node = Deserialize::deserialize(expansion_jewel_value).expect("Failed to parse expansion jewel node");
+                let position_data = Deserialize::deserialize(&value).expect("Failed to parse position data");
+                let main_data = Deserialize::deserialize(value).expect("Failed to parse main data");
+                return Ok(Node::ExpansionJewelSocket(main_data, position_data, expansion_jewel_node));
+            }
+
+            let jewel_socket_node = Deserialize::deserialize(&value).expect("Failed to parse jewel socket node");
+            let position_data = Deserialize::deserialize(value).expect("Failed to parse position data");
+            return Ok(Node::JewelSocket(jewel_socket_node, position_data));
+        }
+
+        if map.contains_key(SKILL_FLAG) {
+            match Deserialize::deserialize(&value) {
+                Ok(position_data) => {
+                    let main_data = Deserialize::deserialize(&value).expect("Failed to parse main data");
+                    let normal_node = Deserialize::deserialize(value).expect("Failed to parse normal node");
+                    return Ok(Node::Normal(main_data, position_data, normal_node))
+                }
+                Err(_) => {
+                    let standalone_normal_node = Deserialize::deserialize(&value).expect("Failed to parse standalone normal node");
+                    let main_data = Deserialize::deserialize(value).expect("Failed to parse main data");
+                    return Ok(Node::StandaloneNormal(main_data, standalone_normal_node))
+                }
             }
         }
 
-        match Deserialize::deserialize(value) {
-            Ok(root_node) => Ok(Node::Root(root_node)),
-            Err(e) => panic!("Failed to parse root node: {}", e),
-        }
+        return Ok(Node::Root(Deserialize::deserialize(value).expect("Failed to parse root node")));
     }
 }
