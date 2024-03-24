@@ -7,7 +7,6 @@ interface SkillTreeProps {
   groupLocations: { [key: string]: [number, number] };
 }
 
-
 const SkillTree: React.FC<SkillTreeProps> = ({ baseSize, groupLocations }) => {
   const [scale, setScale] = useState(1);
   const divRef = useRef<HTMLDivElement>(null);
@@ -16,8 +15,8 @@ const SkillTree: React.FC<SkillTreeProps> = ({ baseSize, groupLocations }) => {
   const handleWheel = (e: WheelEvent) => {
     e.preventDefault();
     const scaleChange = e.deltaY < 0 ? 1.1 : 0.9;
-    setScale(prevScale => prevScale * scaleChange);
-  }
+    setScale((prevScale) => prevScale * scaleChange);
+  };
 
   useEffect(() => {
     const div = divRef.current;
@@ -30,11 +29,14 @@ const SkillTree: React.FC<SkillTreeProps> = ({ baseSize, groupLocations }) => {
   }, []);
 
   return (
-    <div ref={divRef} style={{ transform: `scale(${scale})`, transformOrigin: '0 0' }}>
+    <div
+      ref={divRef}
+      style={{ transform: `scale(${scale})`, transformOrigin: '0 0' }}
+    >
       <Draggable scale={scale} nodeRef={draggableRef}>
         <div
           ref={draggableRef}
-          className='bg-yellow-950 absolute'
+          className="absolute bg-yellow-950"
           style={{ width: baseSize[0], height: baseSize[1] }}
         >
           {Object.entries(groupLocations).map(([key, value]) => (
@@ -43,7 +45,7 @@ const SkillTree: React.FC<SkillTreeProps> = ({ baseSize, groupLocations }) => {
         </div>
       </Draggable>
     </div>
-  )
-}
+  );
+};
 
 export default SkillTree;
