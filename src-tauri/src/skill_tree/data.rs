@@ -3,7 +3,7 @@ use std::collections::HashMap;
 
 use super::{
     node::Node,
-    parsing::{
+    parsing::common::{
         from_string_array_to_u32_box, from_string_key_to_u32_with_group,
         from_string_key_to_u32_with_node,
     },
