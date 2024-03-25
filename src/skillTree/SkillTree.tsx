@@ -1,10 +1,15 @@
 import React, { useEffect, useRef, useState } from 'react';
-import Group from './Group';
+import Group, { TsGroupLocation } from './Group';
 import Draggable from 'react-draggable';
 
 interface SkillTreeProps {
-  baseSize: number[];
-  groupLocations: { [key: string]: [number, number] };
+  baseSize: TsBaseSize;
+  groupLocations: TsGroupLocation[];
+}
+
+export interface TsBaseSize {
+  width: number;
+  height: number;
 }
 
 const SkillTree: React.FC<SkillTreeProps> = ({ baseSize, groupLocations }) => {
@@ -37,10 +42,10 @@ const SkillTree: React.FC<SkillTreeProps> = ({ baseSize, groupLocations }) => {
         <div
           ref={draggableRef}
           className="absolute bg-yellow-950"
-          style={{ width: baseSize[0], height: baseSize[1] }}
+          style={{ width: baseSize.width, height: baseSize.height }}
         >
-          {Object.entries(groupLocations).map(([key, value]) => (
-            <Group key={key} id={key} position={value} />
+          {Object.entries(groupLocations).map(([_, value]) => (
+            <Group key={`Group ${value.group_id}`} groupLocations={value} />
           ))}
         </div>
       </Draggable>

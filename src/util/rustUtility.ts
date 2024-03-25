@@ -11,3 +11,16 @@ export async function invokeAndSet<T>(
     console.error(err);
   }
 }
+
+export async function invokeAndSetWithArgs<T>(
+  setValue: (value: T) => void,
+  command: string,
+  args: Record<string, unknown>,
+) {
+  try {
+    const result: T = await invoke(command, args);
+    setValue(result);
+  } catch (err) {
+    console.error(err);
+  }
+}

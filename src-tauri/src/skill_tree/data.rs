@@ -1,5 +1,5 @@
 use serde::Deserialize;
-use std::collections::HashMap;
+use std::{collections::HashMap, f32::consts::PI};
 
 use super::{
     node::Node,
@@ -13,13 +13,14 @@ use super::{
 pub struct PathOfExileSkillTree {
     tree: String,
     #[serde(deserialize_with = "from_string_key_to_u32_with_group")]
-    groups: HashMap<u32, Group>,
+    pub groups: HashMap<u32, Group>,
     #[serde(deserialize_with = "from_string_key_to_u32_with_node")]
-    nodes: HashMap<u32, Node>,
-    min_x: i32,
-    min_y: i32,
+    pub nodes: HashMap<u32, Node>,
+    pub min_x: i32,
+    pub min_y: i32,
     max_x: i32,
     max_y: i32,
+    constants: Constants,
 }
 
 impl PathOfExileSkillTree {
@@ -37,13 +38,52 @@ impl PathOfExileSkillTree {
             })
             .collect()
     }
+
+    pub fn calculate_orbits(&self) -> Box<[Box<[(f32, f32)]>]> {
+
+        let mut orbits = Vec::new();
+
+        for (orbit_index, skills_in_orbit) in self.constants.skills_per_orbit.iter().enumerate() {
+            let radians_per_index = (2.0 * PI) / *skills_in_orbit as f32;
+            let radius = self.constants.orbit_radii[orbit_index] as f32;
+            let result = (0..*skills_in_orbit)
+                .map(|index| {
+                    let x = radius * radians_per_index.sin() * index as f32;
+                    let y = radius * radians_per_index.cos() * index as f32;
+            
+                    (x, y)
+                })
+                .collect::<Vec<(f32, f32)>>();
+
+                orbits.push(result.into_boxed_slice());
+        }         
+
+        orbits.into_boxed_slice()
+        
+    }
 }
 
 #[derive(Deserialize)]
 pub struct Group {
-    x: f32,
-    y: f32,
+    pub x: f32,
+    pub y: f32,
     orbits: Box<[u8]>,
     #[serde(deserialize_with = "from_string_array_to_u32_box")]
-    nodes: Box<[u32]>,
+    pub nodes: Box<[u32]>,
 }
+
+#[derive(Deserialize)]
+pub struct Constants{
+    classes: HashMap<String, u32>,
+    #[serde(rename = "characterAttributes")]
+    character_attributes: HashMap<String, u32>,
+    #[serde(rename = "PSSCentreInnerRadius")]
+    psscentre_inner_radius: u32,
+    #[serde(rename = "skillsPerOrbit")]
+    skills_per_orbit: Box<[u32]>,
+    #[serde(rename = "orbitRadii")]
+    orbit_radii: Box<[u32]>,
+
+}
+
+

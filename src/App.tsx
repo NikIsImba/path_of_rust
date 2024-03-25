@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import { invokeAndSet } from './util/rustUtility';
-import SkillTree from './skillTree/SkillTree';
+import SkillTree, { TsBaseSize } from './skillTree/SkillTree';
+import { TsGroupLocation } from './skillTree/Group';
 
 function App() {
-  const [baseSize, setBaseSize] = useState([0, 0]);
-  const [groupLocations, setGroupLocations] = useState<{
-    [key: string]: [number, number];
-  }>({});
+  const [baseSize, setBaseSize] = useState<TsBaseSize | null>(null);
+  const [groupLocations, setGroupLocations] = useState<
+    TsGroupLocation[] | null
+  >(null);
 
   useEffect(() => {
     document.body.style.overflow = 'hidden';
@@ -18,16 +19,13 @@ function App() {
     };
   }, []);
 
-  if (
-    baseSize[0] === 0 ||
-    baseSize[1] === 0 ||
-    Object.keys(groupLocations).length === 0
-  )
+  if (baseSize == null || groupLocations == null) {
     return <div>Loading...</div>;
+  }
 
   return (
     <div className="bg-gray-800">
-      <SkillTree baseSize={baseSize} groupLocations={groupLocations} />
+      <SkillTree baseSize={baseSize!} groupLocations={groupLocations!} />
     </div>
   );
 }

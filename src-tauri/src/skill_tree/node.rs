@@ -23,6 +23,46 @@ pub enum Node {
     DeprecatedMastery(NodeMainData),
 }
 
+impl Node{
+    pub fn get_position_data(&self) -> Result<&NodePositionData, &str>{
+        match self{
+            Node::Normal(_, position_data, _) => Ok(position_data),
+            Node::StandaloneNormal(_, _) => Err("StandaloneNormal does not have position data"),
+            Node::Notable(_, position_data, _) => Ok(position_data),
+            Node::StandaloneNotable(_, _) => Err("StandaloneNotable does not have position data"),
+            Node::Keystone(_, position_data, _) => Ok(position_data),
+            Node::StandaloneKeystone(_, _) => Err("StandaloneKeystone does not have position data"),
+            Node::Mastery(_, position_data, _) => Ok(position_data),
+            Node::JewelSocket(_, position_data) => Ok(position_data),
+            Node::ExpansionJewelSocket(_, position_data, _) => Ok(position_data),
+            Node::Ascendancy(_, position_data, _) => Ok(position_data),
+            Node::ClassStart(_, position_data, _) => Ok(position_data),
+            Node::Proxy(_, position_data) => Ok(position_data),
+            Node::Root(position_data) => Ok(position_data),
+            Node::DeprecatedMastery(_) => Err("DeprecatedMastery does not have position data"),
+        }
+    }
+
+    pub fn get_name(&self) -> &str{
+        match self{
+            Node::Normal(main_data, _, _) => &main_data.name,
+            Node::StandaloneNormal(main_data, _) => &main_data.name,
+            Node::Notable(main_data, _, _) => &main_data.name,
+            Node::StandaloneNotable(main_data, _) => &main_data.name,
+            Node::Keystone(main_data, _, _) => &main_data.name,
+            Node::StandaloneKeystone(main_data, _) => &main_data.name,
+            Node::Mastery(main_data, _, _) => &main_data.name,
+            Node::JewelSocket(main_data, _) => &main_data.name,
+            Node::ExpansionJewelSocket(main_data, _, _) => &main_data.name,
+            Node::Ascendancy(main_data, _, _) => &main_data.name,
+            Node::ClassStart(main_data, _, _) => &main_data.name,
+            Node::Proxy(main_data, _) => &main_data.name,
+            Node::Root(_) => "Root",
+            Node::DeprecatedMastery(main_data) => &main_data.name,
+        }
+    }
+}
+
 #[derive(Deserialize)]
 pub struct NodeMainData {
     skill: u32,
@@ -34,9 +74,9 @@ pub struct NodeMainData {
 #[derive(Deserialize)]
 pub struct NodePositionData {
     group: u32,
-    orbit: u8,
+    pub orbit: u8,
     #[serde(rename = "orbitIndex")]
-    orbit_index: u8,
+    pub orbit_index: u8,
     #[serde(deserialize_with = "from_string_array_to_u32_box", rename = "out")]
     out_nodes: Box<[u32]>,
     #[serde(deserialize_with = "from_string_array_to_u32_box", rename = "in")]
