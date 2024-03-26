@@ -1,6 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import Group, { TsGroupLocation } from './Group';
 import Draggable from 'react-draggable';
+import { throttle } from 'lodash';
 
 interface SkillTreeProps {
   baseSize: TsBaseSize;
@@ -17,11 +18,14 @@ const SkillTree: React.FC<SkillTreeProps> = ({ baseSize, groupLocations }) => {
   const divRef = useRef<HTMLDivElement>(null);
   const draggableRef = React.useRef(null);
 
-  const handleWheel = (e: WheelEvent) => {
-    e.preventDefault();
-    const scaleChange = e.deltaY < 0 ? 1.1 : 0.9;
-    setScale((prevScale) => prevScale * scaleChange);
-  };
+  const handleWheel = useCallback(
+    throttle((e: WheelEvent) => {
+      e.preventDefault();
+      const scaleChange = e.deltaY < 0 ? 1.1 : 0.9;
+      setScale((prevScale) => prevScale * scaleChange);
+    }, 100),
+    [],
+  );
 
   useEffect(() => {
     const div = divRef.current;
@@ -31,7 +35,7 @@ const SkillTree: React.FC<SkillTreeProps> = ({ baseSize, groupLocations }) => {
         div.removeEventListener('wheel', handleWheel);
       };
     }
-  }, []);
+  }, [handleWheel]);
 
   return (
     <div
@@ -44,7 +48,7 @@ const SkillTree: React.FC<SkillTreeProps> = ({ baseSize, groupLocations }) => {
           className="absolute bg-yellow-950"
           style={{ width: baseSize.width, height: baseSize.height }}
         >
-          {Object.entries(groupLocations).map(([_, value]) => (
+          {groupLocations.map((value) => (
             <Group key={`Group ${value.group_id}`} groupLocations={value} />
           ))}
         </div>
@@ -53,4 +57,4 @@ const SkillTree: React.FC<SkillTreeProps> = ({ baseSize, groupLocations }) => {
   );
 };
 
-export default SkillTree;
+export default React.memo(SkillTree);

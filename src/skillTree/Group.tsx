@@ -45,4 +45,4 @@ const Group: React.FC<GroupProps> = ({ groupLocations }) => {
   );
 };
 
-export default Group;
+export default React.memo(Group);

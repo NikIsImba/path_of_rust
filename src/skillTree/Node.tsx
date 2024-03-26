@@ -25,4 +25,4 @@ const Node: React.FC<NodeProps> = ({ nodeInfo, text }) => {
   );
 };
 
-export default Node;
+export default React.memo(Node);
