@@ -2,6 +2,7 @@ import React from 'react';
 
 interface NodeProps {
   nodeInfo: TsNode;
+  text: string;
 }
 
 export interface TsNode {
@@ -11,13 +12,14 @@ export interface TsNode {
   y: number;
 }
 
-const Node: React.FC<NodeProps> = ({ nodeInfo }) => {
+const Node: React.FC<NodeProps> = ({ nodeInfo, text }) => {
   return (
     <div
       key={`Node ${nodeInfo.node_id}`}
-      style={{ bottom: `${nodeInfo.x}px`, left: `${nodeInfo.y}px` }}
+      style={{ bottom: `${nodeInfo.y}px`, left: `${nodeInfo.x}px` }}
       className="absolute h-10  w-10 rounded-xl bg-orange-400"
     >
+      {`${text} `}
       {`${nodeInfo.node_name}`}
     </div>
   );

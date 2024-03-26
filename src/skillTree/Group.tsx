@@ -24,16 +24,23 @@ const Group: React.FC<GroupProps> = ({ groupLocations }) => {
   if (nodes == null) {
     return <div>Loading...</div>;
   }
-  console.log(nodes);
+
   return (
     <div
       key={`Group ${groupLocations.group_id}`}
-      style={{ bottom: `${groupLocations.x}px`, left: `${groupLocations.y}px` }}
+      style={{ bottom: `${groupLocations.y}px`, left: `${groupLocations.x}px` }}
       className="absolute h-20  w-20 rounded-xl bg-white"
     >
-      {nodes.map((node) => (
-        <Node key={node.node_id} nodeInfo={node} />
-      ))}
+      <div className="relative">
+        {`Group ${groupLocations.group_id} ${groupLocations.x} ${groupLocations.y}`}
+        {nodes.map((node) => (
+          <Node
+            key={node.node_id}
+            nodeInfo={node}
+            text={`Group ${groupLocations.group_id}`}
+          />
+        ))}
+      </div>
     </div>
   );
 };
