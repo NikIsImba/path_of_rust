@@ -21,7 +21,7 @@ This project has been made possible by implementing a blend of contemporary tech
 
 Before setting up the project, ensure you have the following installed on your system:
 
-- [Yarn](https://yarnpkg.com/)
+- [Bun](https://bun.sh/)
 - [Rust](https://www.rust-lang.org/)
 
 ### Running the Project
@@ -33,13 +33,13 @@ Follow the steps given below to locally set up and run this project:
 $ git clone https://github.com/NikIsImba/path_of_rust.git
 
 # Enter into your repository
-$ cd path-of-rust
+$ cd path_of_rust
 
 # Installing dependencies
-$ yarn install
+$ bun install
 
 # Execute the application
-$ yarn tauri dev
+$ bun tauri dev
 ```
 
 ## Contributing
