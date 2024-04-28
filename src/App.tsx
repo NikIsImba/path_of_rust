@@ -1,9 +1,18 @@
-import { Stage, Container, Sprite, Text } from '@pixi/react';
+import {
+  Stage,
+  Container,
+  Sprite,
+  Text,
+  PixiComponent,
+  applyDefaultProps,
+  useApp,
+} from '@pixi/react';
 import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
 } from './@/components/ui/resizable';
+import { Viewport } from 'pixi-viewport';
 
 function App() {
   return (
@@ -19,7 +28,13 @@ function App() {
             <ResizableHandle disabled={true} className='bg-black' />
             <ResizablePanel defaultSize={95}>
               <div className='h-full w-full'>
-                <MyComponent />
+                <Stage
+                  width={40000}
+                  height={1222}
+                  options={{ background: 0xff0000 }}
+                >
+                  <MyComponent />
+                </Stage>
               </div>
             </ResizablePanel>
           </ResizablePanelGroup>
@@ -38,8 +53,9 @@ function App() {
 export default App;
 
 export const MyComponent = () => {
+  const app = useApp();
   return (
-    <Stage width={3222} height={1222} options={{ background: 0xff0000 }}>
+    <PixiViewport app={app} wor>
       <Sprite
         image='https://pixijs.io/pixi-react/img/bunny.png'
         x={400}
@@ -50,6 +66,36 @@ export const MyComponent = () => {
       <Container x={400} y={330}>
         <Text text='Hello World' anchor={{ x: 0.5, y: 0.5 }} />
       </Container>
-    </Stage>
+    </PixiViewport>
   );
 };
+
+const PixiViewport = PixiComponent('PixiViewport', {
+  create: (props) => {
+    return new Viewport({
+      screenWidth: window.innerWidth,
+      screenHeight: window.innerHeight,
+      worldWidth: 40000,
+      worldHeight: 1222,
+      interaction: props.app.renderer.plugins.interaction,
+    });
+  },
+
+  applyProps: (instance, oldProps, newProps) => {
+    applyDefaultProps(instance, oldProps, newProps);
+  },
+
+  didMount: (instance, parent) => {
+    instance.drag({ pressDrag: true }).pinch().wheel().decelerate();
+    parent.addChild(instance);
+  },
+
+  willUnmount: (instance, parent) => {
+    parent.removeChild(instance);
+  },
+
+  config: {
+    destroy: true,
+    destroyChildren: true,
+  },
+});
